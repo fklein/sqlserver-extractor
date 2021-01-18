@@ -1,0 +1,188 @@
+<?xml version="1.0"?>
+<Settings>
+    <!--
+    Alle relativen Pfadangaben in dieser Konfigurationsdatei beziehen sich auf dieses Verzeichnis.
+    Der Eintrag wird - sofern kein absoluter Pfad - relativ zu dem Speicherort der Datei verstanden.
+    Ist das Element nicht vorhanden, wird das aktuelle Verzeichnis verwendet.
+    -->
+    <BaseDirectory>{{DIRNAME}}</BaseDirectory>
+
+    <!--
+    Die optionalen Verbindungseinstellungen für die Datenbank.
+    -->
+    <Database>
+        <!--
+        Die SQL Server Instanz gegen die der Extraktor laufen soll.
+        Fehlt die Einstellung, wird versucht die (lokalen) Default-Instanz zu verwenden.
+        -->
+        <ServerInstance>{{SQLSERVER_INSTANCE}}</ServerInstance>
+        <!--
+        Der User und zugehöriges Passwort mit dem die Verbindung erfolgen soll.
+        Werden diese nicht angegeben, wird auf die Windows-Authentifizierung zurückgegriffen.
+        Wird der Extraktor mit der Option "-Secure" gestartet, wird das hier angegebene Passwort
+        automtisch mit einem maschinenspezifischen Schlüssel verschlüsselt.
+        Das Klartext-Passwort wird dann hier durch ein "<SecurePassword>" ersetzt.
+        -->
+        <User>{{USERNAME}}</User>
+        <Password>{{PASSWORD}}</Password>
+        <!--
+        Der Timeout in Millisekunden für alle Zugriffe auf die Datenbank.
+        -->
+        <Timeout>{{MILLISECONDS}}</Timeout>
+        <!--
+        Die Datenbank gegen die alle Aktionen ausgeführt werden.
+        Kann normalerweise weggelassen werden, wenn die verwendeten Angaben explizit
+        sind ("db..table") bzw. in der Default-Datenbank des Users gearbeitet wird.
+        -->
+        <Database>{{DB_NAME}}</Database>
+    </Database>
+
+    <!--
+    Alle hier definierten Tasks werden der Reihe nach ausgeführt. Es können beliebig viele Import-,
+    Export- und Script-Tasks in beliebiger Reihenfolge definiert werden.
+    -->
+    <Tasks>
+
+        <!--
+        Ein Script-Task.
+        Der hier hinterlegte Powershell Script-Block wird im Kontext des Extraktors ausgeführt.
+        Das Attribut "Actions" ist optional. Fehlt das Attribut wird die Task immer ausgeführt.
+        Ist das Attribut gesetzt, so wird die Task nur ausgeführt, wenn der Extraktor mit einer der
+        aufgeführten "Actions" gestarte wird.
+        -->
+        <Script Name="{{NAME}}" Actions="{{NAME}},{{NAME}}">
+            {{POWERSHELL_SCRIPTBLOCK}}
+        </Script>
+
+        <!--
+        Ein Import-Task.
+        Die angegebene Datei wird mit den gewählten Einstellungen in die Datenbank eingelesen.
+
+        Das Attribut "Actions" ist optional. Fehlt das Attribut wird die Task immer ausgeführt.
+        Ist das Attribut gesetzt, so wird die Task nur ausgeführt, wenn der Extraktor mit einer der
+        aufgeführten "Actions" gestartet wird. Der Standardwert "Default" wird verwendet, wenn der
+        Extraktor ohne explizite Angabe einer Action gestartet wird.
+        -->
+        <Import Name="{{NAME}}" Action="{{NAME}},{{NAME}}">
+            <!--
+            Zum Attribut "Expand":
+            Das Attribut ist optional und gibt an, ob der hinterlegte Wert zur Laufzeit im Kontext
+            des Extraktors interpretiert/expandiert werden soll. Der Wert kann dann Powershell
+            Variablen und kurze Ausdrücke enthalten, die zur Laufzeit durch die entsprechenden
+            Werte ersetzt werden. Ansonsten (wenn "Expand" fehlt oder nicht "true" enthält) wird
+            der hinterlegte Wert direkt übernommen. Üblicherweise fehlt das Attribut.
+            -->
+
+            <!--
+            Die Quelldatei aus der die Importdaten gelesen werden (Pflichtangabe).
+            -->
+            <SourceFile Expand="{{BOOL}}">{{FILENAME}}</SourceFile>
+            <!--
+            Die Zieltabelle in welche die Importdaten geladen werden (Pflichtangabe).
+            -->
+            <TargetTable Expand="{{BOOL}}">{{DB_TABLE}}</TargetTable>
+            <!--
+            Eine BCP-Formatdatei für die Quelldatei.
+            Wird eine Formatdatei angegeben, werden die folgenden Einstellungen "RecordSeparator"
+            und "FieldSeparator" nicht benötgigt bzw. ignoriert.
+            -->
+            <Format Expand="{{BOOL}}">{{FILENAME}}</Format>
+            <!--
+            Das in der Importdatei verwendete Zeilentrennzeichen (Default "\n").
+            -->
+            <RecordSeparator Expand="{{BOOL}}">{{CHAR}}</RecordSeparator>
+            <!--
+            Das in der Importdatei verwendete Feldtrennzeichen (Default ";").
+            -->
+            <FieldSeparator Expand="{{BOOL}}">{{CHAR}}</FieldSeparator>
+            <!--
+            Der in der Importdatei verwendete Zeichensatz (Default "Windows-1252").
+            -->
+            <CodePage Expand="{{BOOL}}">{{CODEPAGE}}</CodePage>
+            <!--
+            Die folgenden (optionalen) Statements und Scripte werden *vor* dem Import ausgeführt.
+
+            Fehlt das optionale Attribut "Actions" wird das Script/Statement immer ausgeführt.
+            Ist das Attribut hingegen gesetzt, so wird es nur ausgeführt, wenn der Extraktor mit
+            einer der aufgeführten "Actions" gestartet wird.
+
+            Es können beliebig viele Statements oder Script angegeben werden, wobei Scripte stets
+            mit einem vorangestellten "@" zu kennzeichnen sind.
+            -->
+            <Initialize Expand="{{BOOL}}" Actions="{{NAME}},{{NAME}}">{{SQL_STATEMENT}}</Initialize>
+            <Initialize Expand="{{BOOL}}" Actions="{{NAME}},{{NAME}}">@{{FILENAME}}</Initialize>
+            <!--
+            Die folgenden (optionalen) Statements und Scripte werden *nach* dem Import ausgeführt.
+            Ansonsten siehe oben zu "Initialize".
+            -->
+            <Finalize Expand="{{BOOL}}" Actions="{{NAME}},{{NAME}}">{{SQL_STATEMENT}}</Finalize>
+            <Finalize Expand="{{BOOL}}" Actions="{{NAME}},{{NAME}}">@{{FILENAME}}</Finalize>
+        </Import>
+
+        <!--
+        Ein Export-Task.
+        Die angegebene Tabelle oder Query wird mit den gewählten Einstellungen als Datei exportiert.
+
+        Das Attribut "Actions" ist optional. Fehlt das Attribut wird die Task immer ausgeführt.
+        Ist das Attribut gesetzt, so wird die Task nur ausgeführt, wenn der Extraktor mit einer der
+        aufgeführten "Actions" gestartet wird. Der Standardwert "Default" wird verwendet, wenn der
+        Extraktor ohne explizite Angabe einer Action gestartet.
+        -->
+        <Export Name="{{NAME}}" Actions="{{NAME}},{{NAME}}">
+            <!--
+            Zum Attribut "Expand":
+            Das Attribut ist optional und gibt an, ob der hinterlegte Wert zur Laufzeit im Kontext
+            des Extraktors interpretiert/expandiert werden soll. Der Wert kann dann Powershell
+            Variablen und kurze Ausdrücke enthalten, die zur Laufzeit durch die entsprechenden
+            Werte ersetzt werden. Ansonsten (wenn "Expand" fehlt oder nicht "true" enthält) wird
+            der hinterlegte Wert direkt übernommen. Üblicherweise fehlt das Attribut.
+            -->
+
+            <!--
+            Die Quelltabelle oder View aus der die Exportdaten gelesen werden (Pflichtangabe).
+            Ist "SourceTable" angegeben, darf "SourceQuery" nicht mehr verwendet werden.
+            -->
+            <SourceTable Expand="{{BOOL}}">{{DB_TABLE_OR_VIEW}}</SourceTable>
+            <!--
+            Die Query deren Ergebnisdaten exportiert werden (Pflichtangabe).
+            Ist "SourceQuery" angegeben, darf "SourceTable" nicht mehr verwendet werden.
+            -->
+            <SourceQuery Expand="{{BOOL}}">{{SQL_QUERY}}</SourceQuery>
+            <!--
+            Die Zieldatei in welche die Exportdaten geschrieben werden (Pflichtangabe).
+            -->
+            <TargetFile Expand="{{BOOL}}">{{FILENAME}}</TargetFile>
+            <!--
+            Eine BCP-Formatdatei für die Zieldatei.
+            Wird eine Formatdatei angegeben, werden die folgenden Einstellungen "RecordSeparator"
+            und "FieldSeparator" nicht benötgigt bzw. ignoriert.
+            -->
+            <Format Expand="{{BOOL}}">{{FILENAME}}</Format>
+            <!--
+            Das in der Exportdatei verwendete Zeilentrennzeichen (Default "\n").
+            -->
+            <RecordSeparator Expand="{{BOOL}}">{{CHAR}}</RecordSeparator>
+            <!--
+            Das in der Exportdatei verwendete Feldtrennzeichen (Default ";").
+            -->
+            <FieldSeparator Expand="{{BOOL}}">{{CHAR}}</FieldSeparator>
+            <!--
+            Der für die Exportdatei verwendete Zeichensatz (Default "Windows-1252").
+            -->
+            <CodePage Expand="{{BOOL}}">{{CODEPAGE}}</CodePage>
+            <!--
+            Die folgenden (optionalen) Statements und Scripte werden *vor* dem Export ausgeführt.
+            Ansonsten siehe oben unter "Import"
+            -->
+            <Initialize Expand="{{BOOL}}" Actions="{{NAME}},{{NAME}}">{{SQL_STATEMENT}}</Initialize>
+            <Initialize Expand="{{BOOL}}" Actions="{{NAME}},{{NAME}}">@{{FILENAME}}</Initialize>
+            <!--
+            Die folgenden (optionalen) Statements und Scripte werden *nach* dem Export ausgeführt.
+            Ansonsten siehe oben unter "Import".
+            -->
+            <Finalize Expand="{{BOOL}}" Actions="{{NAME}},{{NAME}}">{{SQL_STATEMENT}}</Finalize>
+            <Finalize Expand="{{BOOL}}" Actions="{{NAME}},{{NAME}}">@{{FILENAME}}</Finalize>
+        </Export>
+
+    </Tasks>
+</Settings>

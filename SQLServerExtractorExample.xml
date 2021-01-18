@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<Settings>
+    <BaseDirectory>C:\Programme\MyExtractor</BaseDirectory>
+    <Database>
+        <ServerInstance>my.server.org\MYDB</ServerInstance>
+        <User>scott</User>
+        <Password>Tiger12345</Password>
+        <Timeout>10000</Timeout>
+        <Database>myextractor</Database>
+    </Database>
+    <Tasks>
+        <Script Name="START_SCRIPT">
+            Set-Variable -Name MyStart -Value $(Get-Date) -Scope Global
+            Set-Variable -Name Extension -Value "csv" -Scope Global
+            if ($CustomValues -and $CustomValues["Extension"]) {
+                Set-Variable -Name Extension -Value $CustomValues["Extension"] -Scope Global
+            }
+        </Script>
+        <Import Name="IMPORT_REQUESTS">
+            <SourceFile Expand="true">input\requests_$($MyStart).dsv</SourceFile>
+            <TargetTable>import_requests</TargetTable>
+            <RecordSeparator>\n</RecordSeparator>
+            <FieldSeparator>|</FieldSeparator>
+            <CodePage>28591</CodePage>
+            <Initialize>insert into log valaues (getdate(), 'Starting import')</Initialize>
+            <Initialize Actions="Initial">delete from importdata</Initialize>
+            <Initialize>@sql\scripts\prepareimport.sql</Initialize>
+            <Finalize>insert into log valaues (getdate(), 'Finished import')</Finalize>
+        </Import>
+        <Export Name="EXPORT_DATA">
+            <SourceTable>myextractor..export_data</SourceTable>
+            <TargetFile Expand="true">output\data.$($Extension)</TargetFile>
+            <Format>etc\exportdata.xml</Format>
+            <Initialize>delete from myextractor..export_data</Initialize>
+            <Initialize>@sql\scripts\load_exportdata.sql</Initialize>
+        </Export>
+        <Export Name="EXPORT_LOG" Actions="LogExport">
+            <SourceQuery>select * from myextractor..log order by logtime desc</SourceQuery>
+            <TargetFile>output\log.dsv</TargetFile>
+            <RecordSeparator>\n</RecordSeparator>
+            <FieldSeparator>|</FieldSeparator>
+        </Export>
+        <Script Name="END_SCRIPT">
+            Write-Host ("Extraktion dauerte von {0} bis {1}" -f $MyStart, $(Get-Date))
+        </Script>
+    </Tasks>
+</Settings>
